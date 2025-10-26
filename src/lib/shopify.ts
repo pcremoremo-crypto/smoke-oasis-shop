@@ -189,6 +189,75 @@ export async function getProductByHandle(handle: string) {
   return data?.data?.productByHandle;
 }
 
+const COLLECTIONS_QUERY = `
+  query GetCollections($first: Int!) {
+    collections(first: $first) {
+      edges {
+        node {
+          id
+          title
+          handle
+          description
+          image {
+            url
+            altText
+          }
+          products(first: 9) {
+            edges {
+              node {
+                id
+                title
+                description
+                handle
+                priceRange {
+                  minVariantPrice {
+                    amount
+                    currencyCode
+                  }
+                }
+                images(first: 1) {
+                  edges {
+                    node {
+                      url
+                      altText
+                    }
+                  }
+                }
+                variants(first: 10) {
+                  edges {
+                    node {
+                      id
+                      title
+                      price {
+                        amount
+                        currencyCode
+                      }
+                      availableForSale
+                      selectedOptions {
+                        name
+                        value
+                      }
+                    }
+                  }
+                }
+                options {
+                  name
+                  values
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+`;
+
+export async function getCollections(first: number = 10) {
+  const data = await storefrontApiRequest(COLLECTIONS_QUERY, { first });
+  return data?.data?.collections?.edges || [];
+}
+
 export async function createStorefrontCheckout(items: CartItem[]): Promise<string> {
   try {
     const lines = items.map(item => ({
