@@ -1,7 +1,5 @@
-import { useEffect, useState } from "react";
-import { getCollections } from "@/lib/shopify";
+import { mockCollections as collections } from "@/lib/mock-data";
 import { ProductCard } from "./ProductCard";
-import { Loader2 } from "lucide-react";
 import type { ShopifyProduct } from "@/stores/cartStore";
 
 interface ShopifyCollection {
@@ -21,33 +19,7 @@ interface ShopifyCollection {
 }
 
 export const CollectionsSection = () => {
-  const [collections, setCollections] = useState<ShopifyCollection[]>([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchCollections = async () => {
-      try {
-        const collectionsData = await getCollections(10);
-        setCollections(collectionsData);
-      } catch (error) {
-        console.error('Error fetching collections:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCollections();
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-[400px]">
-        <Loader2 className="h-12 w-12 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (collections.length === 0) {
+  if (!collections || collections.length === 0) {
     return (
       <div className="text-center py-20">
         <h3 className="text-2xl font-semibold mb-4">No hay colecciones disponibles</h3>

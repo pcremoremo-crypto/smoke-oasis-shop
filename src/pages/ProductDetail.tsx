@@ -1,37 +1,40 @@
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { getProductByHandle } from "@/lib/shopify";
+import { mockProducts } from "@/lib/mock-data";
 import { Button } from "@/components/ui/button";
-import { Loader2, ShoppingCart, ArrowLeft } from "lucide-react";
-import { useCartStore } from "@/stores/cartStore";
+import { ShoppingCart, ArrowLeft } from "lucide-react";
+import { useCartStore, type ShopifyProduct } from "@/stores/cartStore";
 import { toast } from "sonner";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
+import { cn } from "@/lib/utils";
+
+// Definimos un tipo más estricto para el nodo del producto
+type ProductNode = ShopifyProduct['node'];
 
 export default function ProductDetail() {
   const { handle } = useParams<{ handle: string }>();
-  const [product, setProduct] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const productNode = mockProducts.find(p => p.node.handle === handle)?.node as ProductNode | undefined;
+
+  const [product, setProduct] = useState<ProductNode | null>(productNode || null);
   const [selectedVariant, setSelectedVariant] = useState<any>(null);
+  const [displayedImage, setDisplayedImage] = useState<string | null>(null);
   const addItem = useCartStore(state => state.addItem);
 
   useEffect(() => {
-    const fetchProduct = async () => {
-      if (!handle) return;
-      
-      try {
-        const productData = await getProductByHandle(handle);
-        setProduct(productData);
-        setSelectedVariant(productData?.variants?.edges?.[0]?.node);
-      } catch (error) {
-        console.error('Error fetching product:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    if (product) {
+      const initialVariant = product.variants?.edges?.[0]?.node;
+      setSelectedVariant(initialVariant);
+      setDisplayedImage(initialVariant?.image?.url || product.images.edges[0]?.node.url || null);
+    }
+  }, [product]);
 
-    fetchProduct();
-  }, [handle]);
+  const handleVariantSelect = (variant: any) => {
+    setSelectedVariant(variant);
+    if (variant.image) {
+      setDisplayedImage(variant.image.url);
+    }
+  };
 
   const handleAddToCart = () => {
     if (!product || !selectedVariant) return;
@@ -47,20 +50,9 @@ export default function ProductDetail() {
     
     addItem(cartItem);
     toast.success('Añadido al carrito', {
-      description: `${product.title} ha sido añadido a tu carrito`,
+      description: `${product.title} (${selectedVariant.title}) ha sido añadido a tu carrito`,
     });
   };
-
-  if (loading) {
-    return (
-      <>
-        <Navbar />
-        <div className="flex items-center justify-center min-h-screen pt-20">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-        </div>
-      </>
-    );
-  }
 
   if (!product) {
     return (
@@ -72,39 +64,56 @@ export default function ProductDetail() {
             <Button>Volver al inicio</Button>
           </Link>
         </div>
+        <Footer />
       </>
     );
   }
 
   const price = parseFloat(selectedVariant?.price?.amount || '0');
   const currency = selectedVariant?.price?.currencyCode || 'USD';
-  const image = product.images?.edges?.[0]?.node?.url;
 
   return (
     <>
       <Navbar />
       <div className="min-h-screen pt-24 pb-12">
         <div className="container mx-auto px-4">
-          <Link to="/" className="inline-flex items-center text-muted-foreground hover:text-primary mb-8 transition-colors">
+          <Link to="/productos" className="inline-flex items-center text-muted-foreground hover:text-primary mb-8 transition-colors">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver a la tienda
+            Volver a productos
           </Link>
 
           <div className="grid md:grid-cols-2 gap-12">
-            <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted shadow-card">
-              {image && (
-                <img
-                  src={image}
-                  alt={product.title}
-                  className="w-full h-full object-cover"
-                />
-              )}
+            <div>
+              <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted shadow-card mb-4">
+                {displayedImage && (
+                  <img
+                    src={displayedImage}
+                    alt={product.title}
+                    className="w-full h-full object-cover transition-opacity duration-300"
+                  />
+                )}
+              </div>
+              <div className="grid grid-cols-5 gap-2">
+                {product.images.edges.map((imageEdge, index) => (
+                  <button 
+                    key={index} 
+                    onClick={() => setDisplayedImage(imageEdge.node.url)}
+                    className={cn(
+                      "aspect-square rounded-lg overflow-hidden border-2 transition-all",
+                      displayedImage === imageEdge.node.url ? "border-primary shadow-md" : "border-transparent hover:border-muted-foreground/50"
+                    )}
+                  >
+                    <img src={imageEdge.node.url} alt={imageEdge.node.altText || `Miniatura ${index + 1}`} className="w-full h-full object-cover" />
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="space-y-6">
               <div>
-                <h1 className="text-4xl font-bold mb-4">{product.title}</h1>
-                <p className="text-3xl font-bold text-primary">
+                <h1 className="text-4xl font-bold mb-2">{product.title}</h1>
+                {selectedVariant && <p className="text-lg text-muted-foreground">{selectedVariant.title}</p>}
+                <p className="text-3xl font-bold text-primary mt-4">
                   ${price.toFixed(2)} {currency}
                 </p>
               </div>
@@ -115,23 +124,23 @@ export default function ProductDetail() {
                 </div>
               )}
 
-              {product.variants?.edges?.length > 1 && (
-                <div className="space-y-3">
-                  <label className="text-sm font-semibold">Variante:</label>
+              {product.options.map(option => (
+                <div key={option.name} className="space-y-3">
+                  <label className="text-sm font-semibold">{option.name}:</label>
                   <div className="flex flex-wrap gap-2">
-                    {product.variants.edges.map((variant: any) => (
+                    {product.variants.edges.map((variantEdge: any) => (
                       <Button
-                        key={variant.node.id}
-                        variant={selectedVariant?.id === variant.node.id ? "default" : "outline"}
-                        onClick={() => setSelectedVariant(variant.node)}
-                        className={selectedVariant?.id === variant.node.id ? "bg-gradient-accent" : ""}
+                        key={variantEdge.node.id}
+                        variant={selectedVariant?.id === variantEdge.node.id ? "default" : "outline"}
+                        onClick={() => handleVariantSelect(variantEdge.node)}
+                        className={selectedVariant?.id === variantEdge.node.id ? "bg-gradient-accent" : ""}
                       >
-                        {variant.node.title}
+                        {variantEdge.node.title}
                       </Button>
                     ))}
                   </div>
                 </div>
-              )}
+              ))}
 
               <Button 
                 size="lg" 

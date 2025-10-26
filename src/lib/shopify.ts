@@ -1,10 +1,10 @@
 import { toast } from 'sonner';
 import type { CartItem } from '@/stores/cartStore';
 
-const SHOPIFY_API_VERSION = '2025-07';
-const SHOPIFY_STORE_PERMANENT_DOMAIN = 'smoke-oasis-shop-oorc0.myshopify.com';
+const SHOPIFY_API_VERSION = import.meta.env.VITE_SHOPIFY_API_VERSION;
+const SHOPIFY_STORE_PERMANENT_DOMAIN = import.meta.env.VITE_SHOPIFY_STORE_PERMANENT_DOMAIN;
 const SHOPIFY_STOREFRONT_URL = `https://${SHOPIFY_STORE_PERMANENT_DOMAIN}/api/${SHOPIFY_API_VERSION}/graphql.json`;
-const SHOPIFY_STOREFRONT_TOKEN = 'e2cbb3a5b7fb8660a49c61062ddb6b2a';
+const SHOPIFY_STOREFRONT_TOKEN = import.meta.env.VITE_SHOPIFY_STOREFRONT_TOKEN;
 
 export async function storefrontApiRequest(query: string, variables: any = {}) {
   const response = await fetch(SHOPIFY_STOREFRONT_URL, {

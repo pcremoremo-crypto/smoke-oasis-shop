@@ -9,37 +9,33 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { ShoppingCart, Minus, Plus, Trash2, ExternalLink, Loader2 } from "lucide-react";
+import { ShoppingCart, Minus, Plus, Trash2, CheckCircle, Loader2 } from "lucide-react";
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
 
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
   const { 
     items, 
-    isLoading, 
     updateQuantity, 
     removeItem, 
-    createCheckout 
+    clearCart 
   } = useCartStore();
   
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (parseFloat(item.price.amount) * item.quantity), 0);
 
   const handleCheckout = async () => {
-    try {
-      await createCheckout();
-      const checkoutUrl = useCartStore.getState().checkoutUrl;
-      if (checkoutUrl) {
-        window.open(checkoutUrl, '_blank');
-        setIsOpen(false);
-      }
-    } catch (error) {
-      console.error('Checkout failed:', error);
-      toast.error('Error al crear el checkout', {
-        description: 'Por favor intenta nuevamente'
+    setIsCheckingOut(true);
+    setTimeout(() => {
+      toast.success('¡Pedido realizado con éxito!', {
+        description: 'Gracias por tu compra (Simulación)',
       });
-    }
+      clearCart();
+      setIsCheckingOut(false);
+      setIsOpen(false);
+    }, 2000); // Simula un retraso de 2 segundos
   };
 
   return (
@@ -144,17 +140,17 @@ export const CartDrawer = () => {
                   onClick={handleCheckout}
                   className="w-full bg-gradient-accent hover:opacity-90 transition-opacity" 
                   size="lg"
-                  disabled={items.length === 0 || isLoading}
+                  disabled={items.length === 0 || isCheckingOut}
                 >
-                  {isLoading ? (
+                  {isCheckingOut ? (
                     <>
                       <Loader2 className="w-5 h-5 mr-2 animate-spin" />
                       Procesando...
                     </>
                   ) : (
                     <>
-                      <ExternalLink className="w-5 h-5 mr-2" />
-                      Ir al Checkout
+                      <CheckCircle className="w-5 h-5 mr-2" />
+                      Simular Checkout
                     </>
                   )}
                 </Button>
