@@ -47,15 +47,17 @@ export const Products = () => {
       .then(updatedProduct => {
         if (currentProduct) {
           setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+          toast.success('Producto actualizado', { description: `${updatedProduct.name} ha sido actualizado.` });
         } else {
           setProducts([...products, updatedProduct]);
+          toast.success('Producto creado', { description: `${updatedProduct.name} ha sido añadido.` });
         }
         setIsDialogOpen(false);
         setCurrentProduct(null);
       })
       .catch(err => {
         console.error("Failed to save product:", err);
-        alert("Error al guardar el producto: " + err.message);
+        toast.error('Error al guardar el producto', { description: err.message || 'Hubo un problema al guardar el producto.' });
       });
   };
 
@@ -65,10 +67,18 @@ export const Products = () => {
   };
 
   const handleDelete = (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
+    if (window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
       fetch(`/api/products/${id}`, { method: 'DELETE' })
-        .then(() => {
+        .then(res => {
+          if (!res.ok) {
+            return res.text().then(text => { throw new Error(text) });
+          }
           setProducts(products.filter(p => p.id !== id));
+          toast.success('Producto eliminado', { description: 'El producto ha sido eliminado correctamente.' });
+        })
+        .catch(err => {
+          console.error("Failed to delete product:", err);
+          toast.error('Error al eliminar el producto', { description: err.message || 'Hubo un problema al eliminar el producto.' });
         });
     }
   };
