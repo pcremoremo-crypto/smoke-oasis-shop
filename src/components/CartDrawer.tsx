@@ -14,6 +14,21 @@ import { ShoppingCart, Minus, Plus, Trash2, CheckCircle, Loader2 } from "lucide-
 import { useCartStore } from "@/stores/cartStore";
 import { toast } from "sonner";
 
+// Helper to get product details from a cart item, regardless of structure
+const getProductDetails = (item) => {
+  // The `product` object in the cart is the one adapted for ProductCard
+  // It has the `node` structure.
+  const node = item.product?.node;
+  if (!node) {
+    // Fallback for safety, though this shouldn't happen
+    return { title: 'Producto Desconocido', image: '' };
+  }
+  return {
+    title: node.title,
+    image: node.images.edges[0]?.node.url || '',
+  };
+};
+
 export const CartDrawer = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [isCheckingOut, setIsCheckingOut] = useState(false);
@@ -102,42 +117,45 @@ export const CartDrawer = () => {
           ) : (
             <>
               <div className="flex-1 overflow-y-auto pr-2 min-h-0 space-y-4">
-                {items.map((item) => (
-                  <div key={item.variantId} className="flex gap-4 p-3 rounded-lg bg-card border border-border hover:shadow-card transition-shadow">
-                    <div className="w-20 h-20 bg-muted rounded-md overflow-hidden flex-shrink-0">
-                      {item.product.node.images?.edges?.[0]?.node && (
-                        <img
-                          src={item.product.node.images.edges[0].node.url}
-                          alt={item.product.node.title}
-                          className="w-full h-full object-cover"
-                        />
-                      )}
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h4 className="font-semibold truncate text-foreground">{item.product.node.title}</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {item.selectedOptions.map(option => option.value).join(' • ')}
-                      </p>
-                      <p className="font-bold text-primary mt-1">
-                        {item.price.currencyCode} ${parseFloat(item.price.amount).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => removeItem(item.variantId)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                      <div className="flex items-center gap-1 bg-muted rounded-md">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.variantId, item.quantity - 1)}>
-                          <Minus className="h-3 w-3" />
+                {items.map((item) => {
+                  const details = getProductDetails(item);
+                  return (
+                    <div key={item.variantId} className="flex gap-4 p-3 rounded-lg bg-card border border-border hover:shadow-card transition-shadow">
+                      <div className="w-20 h-20 bg-muted rounded-md overflow-hidden flex-shrink-0">
+                        {details.image && (
+                          <img
+                            src={details.image}
+                            alt={details.title}
+                            className="w-full h-full object-cover"
+                          />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="font-semibold truncate text-foreground">{details.title}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {item.variantTitle}
+                        </p>
+                        <p className="font-bold text-primary mt-1">
+                          {item.price.currencyCode} ${parseFloat(item.price.amount).toFixed(2)}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end gap-2 flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive" onClick={() => removeItem(item.variantId)}>
+                          <Trash2 className="h-4 w-4" />
                         </Button>
-                        <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.variantId, item.quantity + 1)}>
-                          <Plus className="h-3 w-3" />
-                        </Button>
+                        <div className="flex items-center gap-1 bg-muted rounded-md">
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.variantId, item.quantity - 1)}>
+                            <Minus className="h-3 w-3" />
+                          </Button>
+                          <span className="w-8 text-center text-sm font-medium">{item.quantity}</span>
+                          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => updateQuantity(item.variantId, item.quantity + 1)}>
+                            <Plus className="h-3 w-3" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               
               <div className="flex-shrink-0 space-y-4 pt-6 border-t border-border bg-background">

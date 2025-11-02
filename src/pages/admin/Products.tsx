@@ -179,7 +179,7 @@ export const Products = () => {
             </CardHeader>
             <CardContent>
               <p>{product.description}</p>
-              <p className="font-bold mt-4">${product.price.toFixed(2)}</p>
+              <p className="font-bold mt-4">${(product.price ? parseFloat(product.price as any) : 0).toFixed(2)}</p>
               <p>Stock: {product.stock}</p>
               <div className="flex gap-2 mt-4">
                 <Button variant="outline" onClick={() => handleOpenDialog(product)}>Editar</Button>

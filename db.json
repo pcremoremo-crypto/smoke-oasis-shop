@@ -51,6 +51,60 @@
   ],
   "orders": [
     {
+      "id": "ORD-1762102864641",
+      "customerName": "tomas",
+      "date": "2025-11-02T17:01:04.641Z",
+      "total": 80000,
+      "items": [
+        {
+          "product": {
+            "node": {
+              "id": "1762098782053",
+              "title": "ak47",
+              "description": "ak47",
+              "handle": "1762098782053",
+              "images": {
+                "edges": [
+                  {
+                    "node": {
+                      "url": "/images/products/1762098782028-ak47 gold.jpg",
+                      "altText": "ak47"
+                    }
+                  }
+                ]
+              },
+              "priceRange": {
+                "minVariantPrice": {
+                  "amount": "80000",
+                  "currencyCode": "USD"
+                }
+              },
+              "variants": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "variant-1762098782053",
+                      "title": "Default",
+                      "price": {
+                        "amount": "80000",
+                        "currencyCode": "USD"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "variantId": "variant-1762098782053",
+          "quantity": 1,
+          "price": {
+            "amount": "80000",
+            "currencyCode": "USD"
+          }
+        }
+      ]
+    },
+    {
       "id": "ORD-1762098880280",
       "customerName": "test",
       "date": "2025-11-02T15:54:40.280Z",
@@ -257,6 +311,12 @@
       "id": "CUST-1762098880280",
       "name": "test",
       "email": "teat@hotmail.com",
+      "totalOrders": 1
+    },
+    {
+      "id": "CUST-1762102864642",
+      "name": "tomas",
+      "email": "tomas@yopmail.com",
       "totalOrders": 1
     }
   ]
