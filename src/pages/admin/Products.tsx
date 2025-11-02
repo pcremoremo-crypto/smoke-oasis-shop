@@ -1,93 +1,95 @@
-import { useState, useEffect } from "react";
+import { useEffect } from "react";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { useProductsStore } from "@/stores/adminProductsStore";
+
+// Zod schema for client-side validation
+const productFormSchema = z.object({
+  name: z.string().min(1, "El nombre es requerido."),
+  description: z.string().min(1, "La descripción es requerida."),
+  price: z.coerce.number().positive("El precio debe ser un número positivo."),
+  stock: z.coerce.number().int().nonnegative("El stock no puede ser negativo."),
+  image: z.any().optional(),
+});
 
 export const Products = () => {
-  const [products, setProducts] = useState([]);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [currentProduct, setCurrentProduct] = useState(null);
+  const {
+    products,
+    fetchProducts,
+    addProduct,
+    updateProduct,
+    deleteProduct,
+    isDialogOpen,
+    setIsDialogOpen,
+    currentProduct,
+    setCurrentProduct,
+  } = useProductsStore();
+
+  const form = useForm<z.infer<typeof productFormSchema>>({
+    resolver: zodResolver(productFormSchema),
+    defaultValues: {
+      name: '',
+      description: '',
+      price: 0,
+      stock: 0,
+    },
+  });
 
   useEffect(() => {
-    fetch('/api/products')
-      .then(res => res.json())
-      .then(setProducts);
-  }, []);
+    fetchProducts();
+  }, [fetchProducts]);
 
-  const handleSave = (e) => {
-    e.preventDefault();
-    const form = e.target;
+  useEffect(() => {
+    if (isDialogOpen) {
+      if (currentProduct) {
+        form.reset({
+          name: currentProduct.name,
+          description: currentProduct.description,
+          price: Number(currentProduct.price),
+          stock: Number(currentProduct.stock),
+        });
+      } else {
+        form.reset({ name: '', description: '', price: 0, stock: 0 });
+      }
+    }
+  }, [isDialogOpen, currentProduct, form]);
+
+  const onSubmit = async (values: z.infer<typeof productFormSchema>) => {
     const formData = new FormData();
+    formData.append('name', values.name);
+    formData.append('description', values.description);
+    formData.append('price', String(values.price));
+    formData.append('stock', String(values.stock));
 
-    formData.append('name', form.elements.name.value);
-    formData.append('description', form.elements.description.value);
-    formData.append('price', form.elements.price.value);
-    formData.append('stock', form.elements.stock.value);
-    
-    const imageFile = form.elements.image.files[0];
+    const imageFile = values.image?.[0];
     if (imageFile) {
       formData.append('image', imageFile);
     }
 
-    const url = currentProduct ? `/api/products/${currentProduct.id}` : '/api/products';
-    const method = currentProduct ? 'PUT' : 'POST';
-
-    fetch(url, {
-      method,
-      body: formData, // No headers needed, browser sets it for FormData
-    })
-      .then(res => {
-        if (!res.ok) {
-          return res.text().then(text => { throw new Error(text) });
-        }
-        return res.json();
-      })
-      .then(updatedProduct => {
-        if (currentProduct) {
-          setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
-          toast.success('Producto actualizado', { description: `${updatedProduct.name} ha sido actualizado.` });
-        } else {
-          setProducts([...products, updatedProduct]);
-          toast.success('Producto creado', { description: `${updatedProduct.name} ha sido añadido.` });
-        }
-        setIsDialogOpen(false);
-        setCurrentProduct(null);
-      })
-      .catch(err => {
-        console.error("Failed to save product:", err);
-        toast.error('Error al guardar el producto', { description: err.message || 'Hubo un problema al guardar el producto.' });
-      });
+    if (currentProduct) {
+      await updateProduct(currentProduct.id, formData);
+    } else {
+      await addProduct(formData);
+    }
   };
 
-  const handleEdit = (product) => {
+  const handleOpenDialog = (product: any = null) => {
     setCurrentProduct(product);
     setIsDialogOpen(true);
-  };
-
-  const handleDelete = (id) => {
-    if (window.confirm('¿Estás seguro de que quieres eliminar este producto?')) {
-      fetch(`/api/products/${id}`, { method: 'DELETE' })
-        .then(res => {
-          if (!res.ok) {
-            return res.text().then(text => { throw new Error(text) });
-          }
-          setProducts(products.filter(p => p.id !== id));
-          toast.success('Producto eliminado', { description: 'El producto ha sido eliminado correctamente.' });
-        })
-        .catch(err => {
-          console.error("Failed to delete product:", err);
-          toast.error('Error al eliminar el producto', { description: err.message || 'Hubo un problema al eliminar el producto.' });
-        });
-    }
   };
 
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Productos</h1>
-        <Button onClick={() => { setCurrentProduct(null); setIsDialogOpen(true); }}>Añadir Producto</Button>
+        <Button onClick={() => handleOpenDialog()}>Añadir Producto</Button>
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -95,15 +97,76 @@ export const Products = () => {
           <DialogHeader>
             <DialogTitle>{currentProduct ? 'Editar Producto' : 'Añadir Producto'}</DialogTitle>
           </DialogHeader>
-          <form onSubmit={handleSave} className="space-y-4">
-            <Input name="name" placeholder="Nombre del producto" defaultValue={currentProduct?.name || ''} />
-            <Textarea name="description" placeholder="Descripción" defaultValue={currentProduct?.description || ''} />
-            <Input name="price" type="number" placeholder="Precio" defaultValue={currentProduct?.price || ''} />
-            <Input name="stock" type="number" placeholder="Stock" defaultValue={currentProduct?.stock || ''} />
-            <Input name="image" type="file" />
-            {currentProduct?.image && <img src={currentProduct.image} alt={currentProduct.name} className="w-20 h-20 object-cover rounded-md"/>}
-            <Button type="submit">Guardar</Button>
-          </form>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Nombre</FormLabel>
+                    <FormControl><Input {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="description"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Descripción</FormLabel>
+                    <FormControl><Textarea {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="price"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Precio</FormLabel>
+                    <FormControl><Input type="number" step="0.01" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="stock"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Stock</FormLabel>
+                    <FormControl><Input type="number" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="image"
+                render={({ field: { onChange, ...fieldProps } }) => (
+                  <FormItem>
+                    <FormLabel>Imagen</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="file" 
+                        {...fieldProps} 
+                        value={undefined} // Required for file inputs
+                        onChange={(event) => onChange(event.target.files)}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              {currentProduct?.image && <img src={currentProduct.image} alt={currentProduct.name} className="w-20 h-20 object-cover rounded-md"/>}
+              <Button type="submit" disabled={form.formState.isSubmitting}>
+                {form.formState.isSubmitting ? 'Guardando...' : 'Guardar'}
+              </Button>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
 
@@ -116,11 +179,11 @@ export const Products = () => {
             </CardHeader>
             <CardContent>
               <p>{product.description}</p>
-              <p className="font-bold mt-4">${product.price}</p>
+              <p className="font-bold mt-4">${product.price.toFixed(2)}</p>
               <p>Stock: {product.stock}</p>
               <div className="flex gap-2 mt-4">
-                <Button variant="outline" onClick={() => handleEdit(product)}>Editar</Button>
-                <Button variant="destructive" onClick={() => handleDelete(product.id)}>Eliminar</Button>
+                <Button variant="outline" onClick={() => handleOpenDialog(product)}>Editar</Button>
+                <Button variant="destructive" onClick={() => deleteProduct(product.id)}>Eliminar</Button>
               </div>
             </CardContent>
           </Card>

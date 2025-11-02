@@ -4,10 +4,25 @@ const path = require('path');
 const cors = require('cors');
 const bodyParser = require('body-parser');
 const multer = require('multer');
+const { z } = require('zod');
 
 const app = express();
 const PORT = 3001;
 const DB_PATH = path.join(__dirname, 'db.json');
+
+// Zod schema for product validation
+const productSchema = z.object({
+  name: z.string().min(1, { message: "El nombre es requerido." }),
+  description: z.string().min(1, { message: "La descripción es requerida." }),
+  price: z.preprocess(
+    (a) => parseFloat(z.string().parse(a)),
+    z.number().positive({ message: "El precio debe ser un número positivo." })
+  ),
+  stock: z.preprocess(
+    (a) => parseInt(z.string().parse(a), 10),
+    z.number().int().nonnegative({ message: "El stock no puede ser negativo." })
+  ),
+});
 
 // Multer storage configuration
 const storage = multer.diskStorage({
@@ -122,41 +137,56 @@ app.get('/api/dashboard', (req, res) => {
 
 // Add a new product
 app.post('/api/products', upload.single('image'), (req, res) => {
-  const db = readDB();
-  const newProduct = {
-    id: Date.now().toString(),
-    ...req.body,
-  };
+  try {
+    const validatedData = productSchema.parse(req.body);
+    const db = readDB();
+    const newProduct = {
+      id: Date.now().toString(),
+      ...validatedData,
+    };
 
-  if (req.file) {
-    // Make sure the path is web-accessible
-    newProduct.image = `/images/products/${req.file.filename}`;
+    if (req.file) {
+      newProduct.image = `/images/products/${req.file.filename}`;
+    }
+
+    db.products.push(newProduct);
+    writeDB(db);
+    res.status(201).json(newProduct);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ errors: error.errors });
+    }
+    res.status(500).json({ message: 'Internal server error' });
   }
-
-  db.products.push(newProduct);
-  writeDB(db);
-  res.status(201).json(newProduct);
 });
 
 // Update a product
 app.put('/api/products/:id', upload.single('image'), (req, res) => {
-  const db = readDB();
-  const productId = req.params.id;
-  const productIndex = db.products.findIndex(p => p.id === productId);
+  try {
+    const validatedData = productSchema.parse(req.body);
+    const db = readDB();
+    const productId = req.params.id;
+    const productIndex = db.products.findIndex(p => p.id === productId);
 
-  if (productIndex === -1) {
-    return res.status(404).json({ message: 'Product not found' });
+    if (productIndex === -1) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const updatedProduct = { ...db.products[productIndex], ...validatedData };
+
+    if (req.file) {
+      updatedProduct.image = `/images/products/${req.file.filename}`;
+    }
+
+    db.products[productIndex] = updatedProduct;
+    writeDB(db);
+    res.json(db.products[productIndex]);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return res.status(400).json({ errors: error.errors });
+    }
+    res.status(500).json({ message: 'Internal server error' });
   }
-
-  const updatedProduct = { ...db.products[productIndex], ...req.body };
-
-  if (req.file) {
-    updatedProduct.image = `/images/products/${req.file.filename}`;
-  }
-
-  db.products[productIndex] = updatedProduct;
-  writeDB(db);
-  res.json(db.products[productIndex]);
 });
 
 // Delete a product
