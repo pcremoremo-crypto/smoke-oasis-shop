@@ -1,6 +1,232 @@
 {
-  "products": [],
+  "products": [
+    {
+      "id": "gid://shopify/Product/1",
+      "name": "Narguile Alpha",
+      "description": "Un narguile de diseño moderno y rendimiento excepcional.",
+      "price": "150.00",
+      "stock": 10,
+      "image": "https://images.pexels.com/photos/1059607/pexels-photo-1059607.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+    },
+    {
+      "id": "gid://shopify/Product/2",
+      "name": "Narguile Beta",
+      "description": "Tradición y calidad en un solo producto.",
+      "price": "120.00",
+      "stock": 15,
+      "image": "https://images.pexels.com/photos/4110101/pexels-photo-4110101.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+    },
+    {
+      "id": "gid://shopify/Product/4",
+      "name": "Narguile Gamma",
+      "description": "Perfecto para iniciarse en el mundo de la hookah.",
+      "price": "90.00",
+      "stock": 20,
+      "image": "https://images.pexels.com/photos/5967852/pexels-photo-5967852.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+    },
+    {
+      "id": "gid://shopify/Product/3",
+      "name": "Carbones Naturales",
+      "description": "Carbones de coco de alta duración.",
+      "price": "15.00",
+      "stock": 50,
+      "image": "https://images.pexels.com/photos/952356/pexels-photo-952356.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1"
+    },
+    {
+      "id": "1762097255300",
+      "name": "hooka1",
+      "description": "",
+      "price": "1500",
+      "stock": "50",
+      "image": "/images/products/1762097255161-wallhaven-1pq6eg_2560x1440.png"
+    },
+    {
+      "id": "1762098782053",
+      "name": "ak47",
+      "description": "ak47",
+      "price": "80000",
+      "stock": "2",
+      "image": "/images/products/1762098782028-ak47 gold.jpg"
+    }
+  ],
   "orders": [
+    {
+      "id": "ORD-1762098880280",
+      "customerName": "test",
+      "date": "2025-11-02T15:54:40.280Z",
+      "total": 80000,
+      "items": [
+        {
+          "product": {
+            "node": {
+              "id": "1762098782053",
+              "title": "ak47",
+              "description": "ak47",
+              "handle": "1762098782053",
+              "priceRange": {
+                "minVariantPrice": {
+                  "amount": "80000",
+                  "currencyCode": "USD"
+                }
+              },
+              "images": {
+                "edges": [
+                  {
+                    "node": {
+                      "url": "/images/products/1762098782028-ak47 gold.jpg",
+                      "altText": "ak47"
+                    }
+                  }
+                ]
+              },
+              "variants": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "variant-1762098782053",
+                      "title": "Default Title",
+                      "price": {
+                        "amount": "80000",
+                        "currencyCode": "USD"
+                      },
+                      "availableForSale": true,
+                      "selectedOptions": []
+                    }
+                  }
+                ]
+              },
+              "options": []
+            }
+          },
+          "variantId": "variant-1762098782053",
+          "variantTitle": "Default Title",
+          "price": {
+            "amount": "80000",
+            "currencyCode": "USD"
+          },
+          "quantity": 1,
+          "selectedOptions": []
+        }
+      ]
+    },
+    {
+      "id": "ORD-1762097297015",
+      "customerName": "2342",
+      "date": "2025-11-02T15:28:17.015Z",
+      "total": 3000,
+      "items": [
+        {
+          "product": {
+            "node": {
+              "id": "1762097255300",
+              "title": "hooka1",
+              "description": "",
+              "handle": "1762097255300",
+              "priceRange": {
+                "minVariantPrice": {
+                  "amount": "1500",
+                  "currencyCode": "USD"
+                }
+              },
+              "images": {
+                "edges": [
+                  {
+                    "node": {
+                      "url": "/images/products/1762097255161-wallhaven-1pq6eg_2560x1440.png",
+                      "altText": "hooka1"
+                    }
+                  }
+                ]
+              },
+              "variants": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "variant-1762097255300",
+                      "title": "Default Title",
+                      "price": {
+                        "amount": "1500",
+                        "currencyCode": "USD"
+                      },
+                      "availableForSale": true,
+                      "selectedOptions": []
+                    }
+                  }
+                ]
+              },
+              "options": []
+            }
+          },
+          "variantId": "variant-1762097255300",
+          "variantTitle": "Default Title",
+          "price": {
+            "amount": "1500",
+            "currencyCode": "USD"
+          },
+          "quantity": 2,
+          "selectedOptions": []
+        }
+      ]
+    },
+    {
+      "id": "ORD-1762058576337",
+      "customerName": "test1",
+      "date": "2025-11-02T04:42:56.337Z",
+      "total": 120,
+      "items": [
+        {
+          "product": {
+            "node": {
+              "id": "gid://shopify/Product/2",
+              "title": "Narguile Beta",
+              "description": "Tradición y calidad en un solo producto.",
+              "handle": "narguile-beta",
+              "priceRange": {
+                "minVariantPrice": {
+                  "amount": "120.00",
+                  "currencyCode": "USD"
+                }
+              },
+              "images": {
+                "edges": [
+                  {
+                    "node": {
+                      "url": "https://images.pexels.com/photos/4110101/pexels-photo-4110101.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=1",
+                      "altText": "Narguile Beta"
+                    }
+                  }
+                ]
+              },
+              "variants": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "gid://shopify/ProductVariant/2",
+                      "title": "Default Title",
+                      "price": {
+                        "amount": "120.00",
+                        "currencyCode": "USD"
+                      },
+                      "availableForSale": true,
+                      "selectedOptions": []
+                    }
+                  }
+                ]
+              },
+              "options": []
+            }
+          },
+          "variantId": "gid://shopify/ProductVariant/2",
+          "variantTitle": "Default Title",
+          "price": {
+            "amount": "120.00",
+            "currencyCode": "USD"
+          },
+          "quantity": 1,
+          "selectedOptions": []
+        }
+      ]
+    },
     {
       "id": "ORD-12345",
       "customerName": "Juan Pérez",
@@ -13,6 +239,24 @@
       "id": "CUST-001",
       "name": "Juan Pérez",
       "email": "juan.perez@example.com",
+      "totalOrders": 1
+    },
+    {
+      "id": "CUST-1762058576338",
+      "name": "test1",
+      "email": "test@yopmail.com",
+      "totalOrders": 1
+    },
+    {
+      "id": "CUST-1762097297015",
+      "name": "2342",
+      "email": "234@hotmail.com",
+      "totalOrders": 1
+    },
+    {
+      "id": "CUST-1762098880280",
+      "name": "test",
+      "email": "teat@hotmail.com",
       "totalOrders": 1
     }
   ]

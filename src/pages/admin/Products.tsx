@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 
 export const Products = () => {
   const [products, setProducts] = useState([]);
@@ -18,18 +18,32 @@ export const Products = () => {
 
   const handleSave = (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
-    const productData = Object.fromEntries(formData.entries());
+    const form = e.target;
+    const formData = new FormData();
+
+    formData.append('name', form.elements.name.value);
+    formData.append('description', form.elements.description.value);
+    formData.append('price', form.elements.price.value);
+    formData.append('stock', form.elements.stock.value);
+    
+    const imageFile = form.elements.image.files[0];
+    if (imageFile) {
+      formData.append('image', imageFile);
+    }
 
     const url = currentProduct ? `/api/products/${currentProduct.id}` : '/api/products';
     const method = currentProduct ? 'PUT' : 'POST';
 
     fetch(url, {
       method,
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(productData),
+      body: formData, // No headers needed, browser sets it for FormData
     })
-      .then(res => res.json())
+      .then(res => {
+        if (!res.ok) {
+          return res.text().then(text => { throw new Error(text) });
+        }
+        return res.json();
+      })
       .then(updatedProduct => {
         if (currentProduct) {
           setProducts(products.map(p => p.id === updatedProduct.id ? updatedProduct : p));
@@ -38,6 +52,10 @@ export const Products = () => {
         }
         setIsDialogOpen(false);
         setCurrentProduct(null);
+      })
+      .catch(err => {
+        console.error("Failed to save product:", err);
+        alert("Error al guardar el producto: " + err.message);
       });
   };
 
@@ -72,6 +90,8 @@ export const Products = () => {
             <Textarea name="description" placeholder="Descripción" defaultValue={currentProduct?.description || ''} />
             <Input name="price" type="number" placeholder="Precio" defaultValue={currentProduct?.price || ''} />
             <Input name="stock" type="number" placeholder="Stock" defaultValue={currentProduct?.stock || ''} />
+            <Input name="image" type="file" />
+            {currentProduct?.image && <img src={currentProduct.image} alt={currentProduct.name} className="w-20 h-20 object-cover rounded-md"/>}
             <Button type="submit">Guardar</Button>
           </form>
         </DialogContent>
@@ -80,6 +100,7 @@ export const Products = () => {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {products.map(product => (
           <Card key={product.id}>
+            {product.image && <img src={product.image} alt={product.name} className="w-full h-48 object-cover rounded-t-lg"/>}
             <CardHeader>
               <CardTitle>{product.name}</CardTitle>
             </CardHeader>

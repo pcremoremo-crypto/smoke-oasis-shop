@@ -3,13 +3,27 @@ const fs = require('fs');
 const path = require('path');
 const cors = require('cors');
 const bodyParser = require('body-parser');
+const multer = require('multer');
 
 const app = express();
 const PORT = 3001;
 const DB_PATH = path.join(__dirname, 'db.json');
 
+// Multer storage configuration
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, 'public/images/products');
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({ storage: storage });
+
 app.use(cors());
 app.use(bodyParser.json());
+app.use('/images', express.static(path.join(__dirname, 'public/images')));
 
 // Helper function to read the database
 const readDB = () => {
@@ -57,19 +71,25 @@ app.get('/api/dashboard', (req, res) => {
 });
 
 // Add a new product
-app.post('/api/products', (req, res) => {
+app.post('/api/products', upload.single('image'), (req, res) => {
   const db = readDB();
   const newProduct = {
     id: Date.now().toString(),
     ...req.body,
   };
+
+  if (req.file) {
+    // Make sure the path is web-accessible
+    newProduct.image = `/images/products/${req.file.filename}`;
+  }
+
   db.products.push(newProduct);
   writeDB(db);
   res.status(201).json(newProduct);
 });
 
 // Update a product
-app.put('/api/products/:id', (req, res) => {
+app.put('/api/products/:id', upload.single('image'), (req, res) => {
   const db = readDB();
   const productId = req.params.id;
   const productIndex = db.products.findIndex(p => p.id === productId);
@@ -78,7 +98,13 @@ app.put('/api/products/:id', (req, res) => {
     return res.status(404).json({ message: 'Product not found' });
   }
 
-  db.products[productIndex] = { ...db.products[productIndex], ...req.body };
+  const updatedProduct = { ...db.products[productIndex], ...req.body };
+
+  if (req.file) {
+    updatedProduct.image = `/images/products/${req.file.filename}`;
+  }
+
+  db.products[productIndex] = updatedProduct;
   writeDB(db);
   res.json(db.products[productIndex]);
 });
@@ -131,6 +157,10 @@ app.post('/api/orders', (req, res) => {
   res.status(201).json(newOrder);
 });
 
-app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-});
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`Server is running on http://localhost:${PORT}`);
+  });
+}
+
+module.exports = app;
