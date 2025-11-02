@@ -10,6 +10,8 @@ import AllProducts from "./pages/AllProducts";
 import { ContactPage } from "./pages/Contact";
 import NotFound from "./pages/NotFound";
 import { AdminLayout } from "./components/admin/AdminLayout";
+import { ProtectedRoute } from "./components/admin/ProtectedRoute";
+import { AdminLogin } from "./pages/admin/Login";
 import { Dashboard } from "./pages/admin/Dashboard";
 import { Products } from "./pages/admin/Products";
 import { Orders } from "./pages/admin/Orders";
@@ -31,11 +33,14 @@ const App = () => (
             <Route path="/contact" element={<ContactPage />} />
           </Route>
 
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="products" element={<Products />} />
-            <Route path="orders" element={<Orders />} />
-            <Route path="customers" element={<Customers />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route element={<ProtectedRoute />}>
+            <Route path="/admin" element={<AdminLayout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="products" element={<Products />} />
+              <Route path="orders" element={<Orders />} />
+              <Route path="customers" element={<Customers />} />
+            </Route>
           </Route>
 
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

@@ -21,9 +21,24 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
+const ADMIN_USER = 'admin';
+const ADMIN_PASS = 'password123';
+
 app.use(cors());
 app.use(bodyParser.json());
-app.use('/images', express.static(path.join(__dirname, 'public/images')));
+app.use(express.static('public'));
+
+// Login endpoint
+app.post('/api/login', (req, res) => {
+  const { username, password } = req.body;
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    // In a real app, use JWT. For now, a simple token is fine.
+    const token = `fake-token-${Date.now()}`;
+    res.json({ token });
+  } else {
+    res.status(401).json({ message: 'Invalid credentials' });
+  }
+});
 
 // Helper function to read the database
 const readDB = () => {
