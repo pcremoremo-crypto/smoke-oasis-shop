@@ -98,6 +98,39 @@ app.delete('/api/products/:id', (req, res) => {
   res.status(204).send();
 });
 
+// Create a new order
+app.post('/api/orders', (req, res) => {
+  const db = readDB();
+  const { items, customer } = req.body;
+
+  const total = items.reduce((sum, item) => sum + (item.price.amount * item.quantity), 0);
+
+  const newOrder = {
+    id: `ORD-${Date.now()}`,
+    customerName: customer.name,
+    date: new Date().toISOString(),
+    total,
+    items,
+  };
+
+  db.orders.unshift(newOrder); // Add to the beginning of the array
+
+  let existingCustomer = db.customers.find(c => c.email === customer.email);
+  if (existingCustomer) {
+    existingCustomer.totalOrders += 1;
+  } else {
+    db.customers.push({
+      id: `CUST-${Date.now()}`,
+      name: customer.name,
+      email: customer.email,
+      totalOrders: 1,
+    });
+  }
+
+  writeDB(db);
+  res.status(201).json(newOrder);
+});
+
 app.listen(PORT, () => {
   console.log(`Server is running on http://localhost:${PORT}`);
 });
