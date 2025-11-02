@@ -8,5 +8,12 @@
       "total": 99.99
     }
   ],
-  "customers": []
+  "customers": [
+    {
+      "id": "CUST-001",
+      "name": "Juan Pérez",
+      "email": "juan.perez@example.com",
+      "totalOrders": 1
+    }
+  ]
 }
