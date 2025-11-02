@@ -127,11 +127,18 @@ app.get('/api/dashboard', (req, res) => {
   const totalCustomers = db.customers.length;
   const totalProducts = db.products.length;
 
+  // Prepare data for sales chart (e.g., last 7 days)
+  const recentSales = db.orders.slice(0, 7).map(order => ({
+    name: new Date(order.date).toLocaleDateString('es-ES', { month: 'short', day: 'numeric' }),
+    total: order.total,
+  })).reverse();
+
   res.json({
     totalRevenue,
     totalOrders,
     totalCustomers,
     totalProducts,
+    recentSales,
   });
 });
 
