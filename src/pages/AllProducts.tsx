@@ -4,6 +4,7 @@ import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
 import type { ShopifyProduct } from "@/stores/cartStore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // This is the same adapter from CollectionsSection.tsx
 // In a real app, this would be in a shared utility file.
@@ -64,16 +65,34 @@ const adaptLocalProductToShopifyProduct = (localProduct: LocalProduct): ShopifyP
   };
 };
 
+const ProductSkeleton = () => (
+  <div className="flex flex-col space-y-3">
+    <Skeleton className="h-[250px] w-full rounded-xl" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  </div>
+);
+
 export default function AllProducts() {
   const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [searchParams] = useSearchParams();
   const query = searchParams.get("q") || "";
 
   useEffect(() => {
+    setIsLoading(true);
     fetch('/api/products')
       .then(res => res.json())
-      .then(setProducts)
-      .catch(err => console.error("Failed to fetch products:", err));
+      .then(data => {
+        setProducts(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch products:", err);
+        setIsLoading(false);
+      });
   }, []);
 
   const filteredProducts = useMemo(() => {
@@ -98,19 +117,21 @@ export default function AllProducts() {
             <p className="text-xl text-muted-foreground">Explora nuestro catálogo completo.</p>
           </div>
 
-          {filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {filteredProducts.map((product) => (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {isLoading ? (
+              Array.from({ length: 8 }).map((_, i) => <ProductSkeleton key={i} />)
+            ) : filteredProducts.length > 0 ? (
+              filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={adaptLocalProductToShopifyProduct(product)} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg">
-                {query ? `No se encontraron productos para "${query}".` : "No hay productos disponibles."}
-              </p>
-            </div>
-          )}
+              ))
+            ) : (
+              <div className="col-span-full text-center py-16">
+                <p className="text-muted-foreground text-lg">
+                  {query ? `No se encontraron productos para "${query}".` : "No hay productos disponibles."}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
       <Footer />

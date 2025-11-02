@@ -57,6 +57,17 @@ app.get('/api/products', (req, res) => {
   res.json(db.products);
 });
 
+// Get a single product by ID
+app.get('/api/products/:id', (req, res) => {
+  const db = readDB();
+  const product = db.products.find(p => p.id === req.params.id);
+  if (product) {
+    res.json(product);
+  } else {
+    res.status(404).json({ message: 'Product not found' });
+  }
+});
+
 // Get all orders
 app.get('/api/orders', (req, res) => {
   const db = readDB();

@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { ProductCard } from "./ProductCard";
 import type { ShopifyProduct } from "@/stores/cartStore";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // A simplified product type for our local data
 interface LocalProduct {
@@ -61,26 +62,33 @@ const adaptLocalProductToShopifyProduct = (localProduct: LocalProduct): ShopifyP
   };
 };
 
+const ProductSkeleton = () => (
+  <div className="flex flex-col space-y-3">
+    <Skeleton className="h-[250px] w-full rounded-xl" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  </div>
+);
+
 export const CollectionsSection = () => {
   const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    setIsLoading(true);
     fetch('/api/products')
       .then(res => res.json())
-      .then(setProducts)
-      .catch(err => console.error("Failed to fetch products:", err));
+      .then(data => {
+        setProducts(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch products:", err);
+        setIsLoading(false);
+      });
   }, []);
-
-  if (products.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <h3 className="text-2xl font-semibold mb-4">No hay productos disponibles</h3>
-        <p className="text-muted-foreground">
-          Los productos se mostrarán aquí. Añade nuevos productos desde el panel de administración.
-        </p>
-      </div>
-    );
-  }
 
   return (
     <section id="productos" className="py-20 bg-background">
@@ -98,9 +106,20 @@ export const CollectionsSection = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {products.map((product) => (
-            <ProductCard key={product.id} product={adaptLocalProductToShopifyProduct(product)} />
-          ))}
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => <ProductSkeleton key={i} />)
+          ) : products.length > 0 ? (
+            products.map((product) => (
+              <ProductCard key={product.id} product={adaptLocalProductToShopifyProduct(product)} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-10">
+              <h3 className="text-2xl font-semibold mb-4">No hay productos disponibles</h3>
+              <p className="text-muted-foreground">
+                Los productos se mostrarán aquí. Añade nuevos productos desde el panel de administración.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>
