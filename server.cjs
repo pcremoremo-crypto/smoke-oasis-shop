@@ -51,10 +51,34 @@ const writeDB = (data) => {
   fs.writeFileSync(DB_PATH, JSON.stringify(data, null, 2));
 };
 
-// Get all products
+// Get all products with search and pagination
 app.get('/api/products', (req, res) => {
   const db = readDB();
-  res.json(db.products);
+  let products = db.products;
+
+  // Search functionality
+  const query = req.query.q ? req.query.q.toLowerCase() : '';
+  if (query) {
+    products = products.filter(p => 
+      p.name.toLowerCase().includes(query) ||
+      p.description.toLowerCase().includes(query)
+    );
+  }
+
+  // Pagination functionality
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 12; // Default to 12 products per page
+  const startIndex = (page - 1) * limit;
+  const endIndex = page * limit;
+
+  const paginatedProducts = products.slice(startIndex, endIndex);
+
+  res.json({
+    products: paginatedProducts,
+    totalProducts: products.length,
+    currentPage: page,
+    totalPages: Math.ceil(products.length / limit),
+  });
 });
 
 // Get a single product by ID
