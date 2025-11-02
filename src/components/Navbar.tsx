@@ -49,6 +49,9 @@ export const Navbar = () => {
             <Link to="/productos" className="hidden md:block text-foreground hover:text-primary transition-colors">
               Productos
             </Link>
+            <Link to="/contact" className="hidden md:block text-foreground hover:text-primary transition-colors">
+              Contacto
+            </Link>
             <CartDrawer />
           </div>
         </div>
