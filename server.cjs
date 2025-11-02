@@ -28,6 +28,12 @@ app.get('/api/products', (req, res) => {
   res.json(db.products);
 });
 
+// Get all orders
+app.get('/api/orders', (req, res) => {
+  const db = readDB();
+  res.json(db.orders);
+});
+
 // Add a new product
 app.post('/api/products', (req, res) => {
   const db = readDB();

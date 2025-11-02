@@ -1,5 +1,12 @@
 {
   "products": [],
-  "orders": [],
+  "orders": [
+    {
+      "id": "ORD-12345",
+      "customerName": "Juan Pérez",
+      "date": "2025-10-28T10:00:00Z",
+      "total": 99.99
+    }
+  ],
   "customers": []
 }
