@@ -40,6 +40,22 @@ app.get('/api/customers', (req, res) => {
   res.json(db.customers);
 });
 
+// Get dashboard stats
+app.get('/api/dashboard', (req, res) => {
+  const db = readDB();
+  const totalRevenue = db.orders.reduce((sum, order) => sum + order.total, 0);
+  const totalOrders = db.orders.length;
+  const totalCustomers = db.customers.length;
+  const totalProducts = db.products.length;
+
+  res.json({
+    totalRevenue,
+    totalOrders,
+    totalCustomers,
+    totalProducts,
+  });
+});
+
 // Add a new product
 app.post('/api/products', (req, res) => {
   const db = readDB();
