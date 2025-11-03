@@ -51,6 +51,60 @@
   ],
   "orders": [
     {
+      "id": "ORD-1762187401864",
+      "customerName": "tsdj",
+      "date": "2025-11-03T16:30:01.864Z",
+      "total": 1500,
+      "items": [
+        {
+          "product": {
+            "node": {
+              "id": "1762097255300",
+              "title": "hooka1",
+              "description": "",
+              "handle": "1762097255300",
+              "images": {
+                "edges": [
+                  {
+                    "node": {
+                      "url": "/images/products/1762097255161-wallhaven-1pq6eg_2560x1440.png",
+                      "altText": "hooka1"
+                    }
+                  }
+                ]
+              },
+              "priceRange": {
+                "minVariantPrice": {
+                  "amount": "1500",
+                  "currencyCode": "USD"
+                }
+              },
+              "variants": {
+                "edges": [
+                  {
+                    "node": {
+                      "id": "variant-1762097255300",
+                      "title": "Default",
+                      "price": {
+                        "amount": "1500",
+                        "currencyCode": "USD"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "variantId": "variant-1762097255300",
+          "quantity": 1,
+          "price": {
+            "amount": "1500",
+            "currencyCode": "USD"
+          }
+        }
+      ]
+    },
+    {
       "id": "ORD-1762102864641",
       "customerName": "tomas",
       "date": "2025-11-02T17:01:04.641Z",
@@ -317,6 +371,12 @@
       "id": "CUST-1762102864642",
       "name": "tomas",
       "email": "tomas@yopmail.com",
+      "totalOrders": 1
+    },
+    {
+      "id": "CUST-1762187401864",
+      "name": "tsdj",
+      "email": "klfjksd@ospof.vcom",
       "totalOrders": 1
     }
   ]

@@ -6,7 +6,7 @@ import { Link } from "react-router-dom";
 
 export const Hero = () => {
   const scrollToProducts = () => {
-    const productsSection = document.getElementById('colecciones');
+    const productsSection = document.getElementById('productos');
     productsSection?.scrollIntoView({ behavior: 'smooth' });
   };
 
