@@ -2,6 +2,7 @@ import { Outlet } from "react-router-dom";
 import { Navbar } from "./Navbar";
 import { AppSidebar } from "./Sidebar";
 import { SidebarProvider, SidebarInset } from "./ui/sidebar";
+import { WhatsAppButton } from "./WhatsAppButton";
 
 export const Layout = () => {
   return (
@@ -12,6 +13,7 @@ export const Layout = () => {
         <main className="pt-16">
           <Outlet />
         </main>
+        <WhatsAppButton />
       </SidebarInset>
     </SidebarProvider>
   );

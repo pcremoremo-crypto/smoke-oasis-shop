@@ -1,157 +1,128 @@
 import { useState, useEffect } from "react";
-import { useParams, Link } from "react-router-dom";
-import { mockProducts } from "@/lib/mock-data";
-import { Button } from "@/components/ui/button";
-import { ShoppingCart, ArrowLeft } from "lucide-react";
-import { useCartStore, type ShopifyProduct } from "@/stores/cartStore";
-import { toast } from "sonner";
+import { useParams } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
-import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
+import { ShoppingCart } from "lucide-react";
+import { useCartStore } from "@/stores/cartStore";
+import { toast } from "sonner";
+import { Skeleton } from "@/components/ui/skeleton";
 
-// Definimos un tipo más estricto para el nodo del producto
-type ProductNode = ShopifyProduct['node'];
+// We need a type for the local product data
+interface LocalProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  stock: number;
+  image: string;
+}
+
+const ProductDetailSkeleton = () => (
+  <div className="container mx-auto px-4 py-12">
+    <div className="grid md:grid-cols-2 gap-12">
+      <Skeleton className="w-full h-[450px] rounded-lg" />
+      <div className="space-y-6">
+        <Skeleton className="h-8 w-3/4" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-full" />
+        <Skeleton className="h-4 w-5/6" />
+        <Skeleton className="h-12 w-1/3" />
+        <Skeleton className="h-12 w-full" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function ProductDetail() {
   const { handle } = useParams<{ handle: string }>();
-  const productNode = mockProducts.find(p => p.node.handle === handle)?.node as ProductNode | undefined;
-
-  const [product, setProduct] = useState<ProductNode | null>(productNode || null);
-  const [selectedVariant, setSelectedVariant] = useState<any>(null);
-  const [displayedImage, setDisplayedImage] = useState<string | null>(null);
+  const [product, setProduct] = useState<LocalProduct | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const addItem = useCartStore(state => state.addItem);
 
   useEffect(() => {
-    if (product) {
-      const initialVariant = product.variants?.edges?.[0]?.node;
-      setSelectedVariant(initialVariant);
-      setDisplayedImage(initialVariant?.image?.url || product.images.edges[0]?.node.url || null);
-    }
-  }, [product]);
-
-  const handleVariantSelect = (variant: any) => {
-    setSelectedVariant(variant);
-    if (variant.image) {
-      setDisplayedImage(variant.image.url);
-    }
-  };
+    if (!handle) return;
+    setIsLoading(true);
+    fetch(`/api/products/${handle}`)
+      .then(res => {
+        if (!res.ok) throw new Error('Product not found');
+        return res.json();
+      })
+      .then(data => {
+        setProduct(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch product:", err);
+        setIsLoading(false);
+      });
+  }, [handle]);
 
   const handleAddToCart = () => {
-    if (!product || !selectedVariant) return;
+    if (!product) return;
 
+    // We need to adapt the LocalProduct to the format the cart expects.
+    // This is a simplified version.
     const cartItem = {
-      product: { node: product },
-      variantId: selectedVariant.id,
-      variantTitle: selectedVariant.title,
-      price: selectedVariant.price,
+      product: {
+        node: {
+          id: product.id,
+          title: product.name,
+          description: product.description,
+          handle: product.id,
+          images: { edges: [{ node: { url: product.image, altText: product.name } }] },
+          priceRange: { minVariantPrice: { amount: product.price, currencyCode: 'USD' } },
+          variants: { edges: [{ node: { id: `variant-${product.id}`, title: 'Default', price: { amount: product.price, currencyCode: 'USD' } } }] }
+        }
+      },
+      variantId: `variant-${product.id}`,
       quantity: 1,
-      selectedOptions: selectedVariant.selectedOptions || []
+      price: { amount: product.price, currencyCode: 'USD' },
     };
-    
-    addItem(cartItem);
+
+    addItem(cartItem as any);
     toast.success('Añadido al carrito', {
-      description: `${product.title} (${selectedVariant.title}) ha sido añadido a tu carrito`,
+      description: `${product.name} ha sido añadido a tu carrito`,
     });
   };
 
-  if (!product) {
+  if (isLoading) {
     return (
       <>
         <Navbar />
-        <div className="container mx-auto px-4 py-20 text-center">
-          <h2 className="text-3xl font-bold mb-4">Producto no encontrado</h2>
-          <Link to="/">
-            <Button>Volver al inicio</Button>
-          </Link>
-        </div>
+        <ProductDetailSkeleton />
         <Footer />
       </>
     );
   }
 
-  const price = parseFloat(selectedVariant?.price?.amount || '0');
-  const currency = selectedVariant?.price?.currencyCode || 'USD';
+  if (!product) {
+    return (
+      <>
+        <Navbar />
+        <div className="text-center py-20">Producto no encontrado</div>
+        <Footer />
+      </>
+    );
+  }
 
   return (
     <>
       <Navbar />
-      <div className="min-h-screen pt-24 pb-12">
-        <div className="container mx-auto px-4">
-          <Link to="/productos" className="inline-flex items-center text-muted-foreground hover:text-primary mb-8 transition-colors">
-            <ArrowLeft className="h-4 w-4 mr-2" />
-            Volver a productos
-          </Link>
-
-          <div className="grid md:grid-cols-2 gap-12">
-            <div>
-              <div className="relative aspect-square rounded-2xl overflow-hidden bg-muted shadow-card mb-4">
-                {displayedImage && (
-                  <img
-                    src={displayedImage}
-                    alt={product.title}
-                    className="w-full h-full object-cover transition-opacity duration-300"
-                  />
-                )}
-              </div>
-              <div className="grid grid-cols-5 gap-2">
-                {product.images.edges.map((imageEdge, index) => (
-                  <button 
-                    key={index} 
-                    onClick={() => setDisplayedImage(imageEdge.node.url)}
-                    className={cn(
-                      "aspect-square rounded-lg overflow-hidden border-2 transition-all",
-                      displayedImage === imageEdge.node.url ? "border-primary shadow-md" : "border-transparent hover:border-muted-foreground/50"
-                    )}
-                  >
-                    <img src={imageEdge.node.url} alt={imageEdge.node.altText || `Miniatura ${index + 1}`} className="w-full h-full object-cover" />
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div>
-                <h1 className="text-4xl font-bold mb-2">{product.title}</h1>
-                {selectedVariant && <p className="text-lg text-muted-foreground">{selectedVariant.title}</p>}
-                <p className="text-3xl font-bold text-primary mt-4">
-                  ${price.toFixed(2)} {currency}
-                </p>
-              </div>
-
-              {product.description && (
-                <div className="prose prose-lg">
-                  <p className="text-muted-foreground">{product.description}</p>
-                </div>
-              )}
-
-              {product.options.map(option => (
-                <div key={option.name} className="space-y-3">
-                  <label className="text-sm font-semibold">{option.name}:</label>
-                  <div className="flex flex-wrap gap-2">
-                    {product.variants.edges.map((variantEdge: any) => (
-                      <Button
-                        key={variantEdge.node.id}
-                        variant={selectedVariant?.id === variantEdge.node.id ? "default" : "outline"}
-                        onClick={() => handleVariantSelect(variantEdge.node)}
-                        className={selectedVariant?.id === variantEdge.node.id ? "bg-gradient-accent" : ""}
-                      >
-                        {variantEdge.node.title}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              ))}
-
-              <Button 
-                size="lg" 
-                className="w-full bg-gradient-accent hover:opacity-90 transition-all text-lg"
-                onClick={handleAddToCart}
-                disabled={!selectedVariant?.availableForSale}
-              >
-                <ShoppingCart className="h-5 w-5 mr-2" />
-                {selectedVariant?.availableForSale ? 'Añadir al Carrito' : 'No Disponible'}
-              </Button>
-            </div>
+      <div className="container mx-auto px-4 py-12">
+        <div className="grid md:grid-cols-2 gap-12 items-start">
+          <img src={product.image} alt={product.name} className="w-full rounded-lg shadow-lg" />
+          <div className="space-y-6">
+            <h1 className="text-4xl font-bold">{product.name}</h1>
+            <p className="text-lg text-muted-foreground">{product.description}</p>
+            <p className="text-4xl font-bold text-primary">${parseFloat(product.price).toFixed(2)}</p>
+            <p className={product.stock > 0 ? 'text-green-600' : 'text-red-600'}>
+              {product.stock > 0 ? `${product.stock} disponibles` : 'Agotado'}
+            </p>
+            <Button size="lg" onClick={handleAddToCart} disabled={product.stock === 0}>
+              <ShoppingCart className="mr-2 h-5 w-5" />
+              Añadir al carrito
+            </Button>
           </div>
         </div>
       </div>

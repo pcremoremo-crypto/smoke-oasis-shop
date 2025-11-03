@@ -1,80 +1,125 @@
-import { mockCollections as collections } from "@/lib/mock-data";
+import { useState, useEffect } from "react";
 import { ProductCard } from "./ProductCard";
 import type { ShopifyProduct } from "@/stores/cartStore";
+import { Skeleton } from "@/components/ui/skeleton";
 
-interface ShopifyCollection {
-  node: {
-    id: string;
-    title: string;
-    handle: string;
-    description: string;
-    image: {
-      url: string;
-      altText: string | null;
-    } | null;
-    products: {
-      edges: ShopifyProduct[];
-    };
-  };
+// A simplified product type for our local data
+interface LocalProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  stock: number;
+  image: string;
 }
 
+// Adapter function to convert local product data to the ShopifyProduct format expected by ProductCard
+const adaptLocalProductToShopifyProduct = (localProduct: LocalProduct): ShopifyProduct => {
+  const variantNode = {
+    id: `variant-${localProduct.id}`,
+    title: 'Default Title',
+    price: {
+      amount: localProduct.price,
+      currencyCode: 'USD',
+    },
+    image: {
+      url: localProduct.image,
+      altText: localProduct.name,
+    },
+    availableForSale: localProduct.stock > 0,
+    selectedOptions: [],
+  };
+
+  return {
+    node: {
+      id: localProduct.id,
+      title: localProduct.name,
+      description: localProduct.description,
+      handle: localProduct.id, // Use id as handle for simplicity
+      priceRange: {
+        minVariantPrice: {
+          amount: localProduct.price,
+          currencyCode: 'USD',
+        },
+      },
+      images: {
+        edges: [
+          {
+            node: {
+              url: localProduct.image,
+              altText: localProduct.name,
+            },
+          },
+        ],
+      },
+      variants: {
+        edges: [
+          { node: variantNode },
+        ],
+      },
+      options: [],
+    },
+  };
+};
+
+const ProductSkeleton = () => (
+  <div className="flex flex-col space-y-3">
+    <Skeleton className="h-[250px] w-full rounded-xl" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  </div>
+);
+
 export const CollectionsSection = () => {
-  if (!collections || collections.length === 0) {
-    return (
-      <div className="text-center py-20">
-        <h3 className="text-2xl font-semibold mb-4">No hay colecciones disponibles</h3>
-        <p className="text-muted-foreground">
-          Las colecciones se mostrarán aquí cuando agregues productos a categorías en tu tienda Shopify.
-        </p>
-      </div>
-    );
-  }
+  const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    setIsLoading(true);
+    fetch('/api/products')
+      .then(res => res.json())
+      .then(data => {
+        setProducts(data);
+        setIsLoading(false);
+      })
+      .catch(err => {
+        console.error("Failed to fetch products:", err);
+        setIsLoading(false);
+      });
+  }, []);
 
   return (
-    <section id="colecciones" className="py-20 bg-background">
+    <section id="productos" className="py-20 bg-background">
       <div className="container mx-auto px-4">
         <div className="text-center mb-16 animate-fade-in">
           <h2 className="text-4xl font-bold mb-4">
-            Explora Nuestras{" "}
+            Explora Nuestros{" "}
             <span className="bg-gradient-accent bg-clip-text text-transparent">
-              Colecciones
+              Productos
             </span>
           </h2>
           <p className="text-xl text-muted-foreground">
-            Descubre productos organizados por categoría
+            La mejor selección para tu sesión de hookah
           </p>
         </div>
 
-        <div className="space-y-20">
-          {collections.map((collection) => {
-            const products = collection.node.products.edges;
-            
-            if (products.length === 0) return null;
-
-            return (
-              <div
-                key={collection.node.id}
-                className="animate-fade-in"
-              >
-                <div className="mb-8">
-                  <h3 className="text-3xl font-bold mb-2 text-foreground">
-                    {collection.node.title}
-                  </h3>
-                  {collection.node.description && (
-                    <p className="text-muted-foreground text-lg">
-                      {collection.node.description}
-                    </p>
-                  )}
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {products.slice(0, 9).map((product) => (
-                    <ProductCard key={product.node.id} product={product} />
-                  ))}
-                </div>
-              </div>
-            );
-          })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {isLoading ? (
+            Array.from({ length: 3 }).map((_, i) => <ProductSkeleton key={i} />)
+          ) : products.length > 0 ? (
+            products.map((product) => (
+              <ProductCard key={product.id} product={adaptLocalProductToShopifyProduct(product)} />
+            ))
+          ) : (
+            <div className="col-span-full text-center py-10">
+              <h3 className="text-2xl font-semibold mb-4">No hay productos disponibles</h3>
+              <p className="text-muted-foreground">
+                Los productos se mostrarán aquí. Añade nuevos productos desde el panel de administración.
+              </p>
+            </div>
+          )}
         </div>
       </div>
     </section>

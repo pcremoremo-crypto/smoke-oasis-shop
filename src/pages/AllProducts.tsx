@@ -1,116 +1,128 @@
-import { useState, useMemo } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useState, useEffect, useMemo } from "react";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { Navbar } from "@/components/Navbar";
 import { Footer } from "@/components/Footer";
 import { ProductCard } from "@/components/ProductCard";
-import { mockCollections as allCollections } from "@/lib/mock-data";
 import type { ShopifyProduct } from "@/stores/cartStore";
-import { useSmoothScroll } from "@/hooks/useSmoothScroll";
-import { Checkbox } from "@/components/ui/checkbox";
-import { Label } from "@/components/ui/label";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-export default function AllProducts() {
-  useSmoothScroll();
-  const [searchParams] = useSearchParams();
-  const query = searchParams.get("q");
+// This is the same adapter from CollectionsSection.tsx
+// In a real app, this would be in a shared utility file.
+interface LocalProduct {
+  id: string;
+  name: string;
+  description: string;
+  price: string;
+  stock: number;
+  image: string;
+}
 
-  const [selectedCollections, setSelectedCollections] = useState<string[]>([]);
-
-  const handleCollectionChange = (collectionId: string) => {
-    setSelectedCollections(prev => 
-      prev.includes(collectionId) 
-        ? prev.filter(id => id !== collectionId) 
-        : [...prev, collectionId]
-    );
+const adaptLocalProductToShopifyProduct = (localProduct: LocalProduct): ShopifyProduct => {
+  const variantNode = {
+    id: `variant-${localProduct.id}`,
+    title: 'Default Title',
+    price: {
+      amount: localProduct.price,
+      currencyCode: 'USD',
+    },
+    image: {
+      url: localProduct.image,
+      altText: localProduct.name,
+    },
+    availableForSale: localProduct.stock > 0,
+    selectedOptions: [],
   };
 
-  const searchResults = useMemo(() => {
-    if (!query) return [];
-    const lowerCaseQuery = query.toLowerCase();
-    const allProducts = allCollections.flatMap(c => c.node.products.edges);
-    return allProducts.filter(p => 
-      p.node.title.toLowerCase().includes(lowerCaseQuery) ||
-      p.node.description.toLowerCase().includes(lowerCaseQuery)
-    );
-  }, [query]);
+  return {
+    node: {
+      id: localProduct.id,
+      title: localProduct.name,
+      description: localProduct.description,
+      handle: localProduct.id,
+      priceRange: {
+        minVariantPrice: {
+          amount: localProduct.price,
+          currencyCode: 'USD',
+        },
+      },
+      images: {
+        edges: [
+          {
+            node: {
+              url: localProduct.image,
+              altText: localProduct.name,
+            },
+          },
+        ],
+      },
+      variants: {
+        edges: [
+          { node: variantNode },
+        ],
+      },
+      options: [],
+    },
+  };
+};
 
-  const filteredCollections = selectedCollections.length > 0
-    ? allCollections.filter(c => selectedCollections.includes(c.node.id))
-    : allCollections;
+const ProductSkeleton = () => (
+  <div className="flex flex-col space-y-3">
+    <Skeleton className="h-[250px] w-full rounded-xl" />
+    <div className="space-y-2">
+      <Skeleton className="h-4 w-3/4" />
+      <Skeleton className="h-4 w-1/2" />
+    </div>
+  </div>
+);
 
-  const renderContent = () => {
-    if (query) {
-      return (
-        <div>
-          <div className="flex justify-between items-center mb-8">
-            <h2 className="text-3xl font-bold">Resultados de búsqueda para "{query}"</h2>
-            <Link to="/productos">
-              <Button variant="outline">Limpiar búsqueda</Button>
-            </Link>
-          </div>
-          {searchResults.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {searchResults.map((product: ShopifyProduct) => (
-                <ProductCard key={product.node.id} product={product} />
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg">No se encontraron productos para "{query}".</p>
-            </div>
-          )}
-        </div>
-      );
-    }
+export default function AllProducts() {
+  const [products, setProducts] = useState<LocalProduct[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [totalProducts, setTotalProducts] = useState(0);
+  const [currentPage, setCurrentPage] = useState(1);
+  const productsPerPage = 12; // This should match the backend limit
 
-    return (
-      <>
-        <div className="mb-12 p-6 bg-card border border-border rounded-lg shadow-sm">
-          <h3 className="text-lg font-semibold mb-4">Filtrar por Colección</h3>
-          <div className="flex flex-wrap gap-x-6 gap-y-4">
-            {allCollections.map(collection => (
-              <div key={collection.node.id} className="flex items-center space-x-2">
-                <Checkbox 
-                  id={collection.node.id}
-                  checked={selectedCollections.includes(collection.node.id)}
-                  onCheckedChange={() => handleCollectionChange(collection.node.id)}
-                />
-                <Label htmlFor={collection.node.id} className="text-base cursor-pointer">
-                  {collection.node.title}
-                </Label>
-              </div>
-            ))}
-          </div>
-        </div>
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const query = searchParams.get("q") || "";
 
-        <div className="space-y-20">
-          {filteredCollections.length > 0 ? (
-            filteredCollections.map((collection) => {
-              const products = collection.node.products.edges;
-              if (products.length === 0) return null;
-              return (
-                <div id={collection.node.handle} key={collection.node.id} className="animate-fade-in">
-                  <div className="mb-8">
-                    <h2 className="text-3xl font-bold mb-2 text-foreground">{collection.node.title}</h2>
-                    {collection.node.description && <p className="text-muted-foreground text-lg">{collection.node.description}</p>}
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {products.map((product: ShopifyProduct) => (
-                      <ProductCard key={product.node.id} product={product} />
-                    ))}
-                  </div>
-                </div>
-              );
-            })
-          ) : (
-            <div className="text-center py-16">
-              <p className="text-muted-foreground text-lg">Por favor, selecciona al menos una colección para ver los productos.</p>
-            </div>
-          )}
-        </div>
-      </>
-    );
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setIsLoading(true);
+      try {
+        const response = await fetch(`/api/products?page=${currentPage}&limit=${productsPerPage}&q=${query}`);
+        const data = await response.json();
+        setProducts(data.products);
+        setTotalProducts(data.totalProducts);
+        // Ensure current page is valid if total products change
+        if (currentPage > data.totalPages && data.totalPages > 0) {
+          setCurrentPage(data.totalPages);
+        }
+      } catch (err) {
+        console.error("Failed to fetch products:", err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [currentPage, query]);
+
+  const totalPages = Math.ceil(totalProducts / productsPerPage);
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    // Scroll to top when page changes
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const newQuery = (e.target as HTMLFormElement).elements.namedItem("search")?.value;
+    setSearchParams(newQuery ? { q: newQuery } : {});
+    setCurrentPage(1); // Reset to first page on new search
   };
 
   return (
@@ -118,16 +130,62 @@ export default function AllProducts() {
       <Navbar />
       <div className="min-h-screen pt-24 pb-12">
         <div className="container mx-auto px-4">
-          {!query && (
-            <div className="text-center mb-12 animate-fade-in">
-              <h1 className="text-5xl font-bold mb-4">
-                Todos Nuestros{" "}
-                <span className="bg-gradient-accent bg-clip-text text-transparent">Productos</span>
-              </h1>
-              <p className="text-xl text-muted-foreground">Explora todas nuestras colecciones en un solo lugar.</p>
+          <div className="text-center mb-12 animate-fade-in">
+            <h1 className="text-5xl font-bold mb-4">
+              Todos Nuestros{" "}
+              <span className="bg-gradient-accent bg-clip-text text-transparent">Productos</span>
+            </h1>
+            <p className="text-xl text-muted-foreground">Explora nuestro catálogo completo.</p>
+          </div>
+
+          <form onSubmit={handleSearchSubmit} className="mb-8 flex justify-center">
+            <input 
+              type="search" 
+              name="search" 
+              placeholder="Buscar productos..." 
+              defaultValue={query}
+              className="w-full max-w-md p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+            <Button type="submit" className="ml-2">Buscar</Button>
+          </form>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {isLoading ? (
+              Array.from({ length: productsPerPage }).map((_, i) => <ProductSkeleton key={i} />)
+            ) : products.length > 0 ? (
+              products.map((product) => (
+                <ProductCard key={product.id} product={adaptLocalProductToShopifyProduct(product)} />
+              ))
+            ) : (
+              <div className="col-span-full text-center py-16">
+                <p className="text-muted-foreground text-lg">
+                  {query ? `No se encontraron productos para "${query}".` : "No hay productos disponibles."}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {totalPages > 1 && (
+            <div className="flex justify-center items-center gap-4 mt-12">
+              <Button 
+                variant="outline" 
+                onClick={() => handlePageChange(currentPage - 1)} 
+                disabled={currentPage === 1}
+              >
+                <ChevronLeft className="h-4 w-4 mr-2" /> Anterior
+              </Button>
+              <span className="text-lg font-medium">
+                Página {currentPage} de {totalPages}
+              </span>
+              <Button 
+                variant="outline" 
+                onClick={() => handlePageChange(currentPage + 1)} 
+                disabled={currentPage === totalPages}
+              >
+                Siguiente <ChevronRight className="h-4 w-4 ml-2" />
+              </Button>
             </div>
           )}
-          {renderContent()}
         </div>
       </div>
       <Footer />
